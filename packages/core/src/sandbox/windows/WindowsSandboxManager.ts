@@ -35,6 +35,7 @@ import {
 } from './commandSafety.js';
 import { type SandboxPolicyManager } from '../../policy/sandboxPolicyManager.js';
 import { verifySandboxOverrides } from '../utils/commandUtils.js';
+import { parseWindowsSandboxDenials } from './windowsSandboxDenialUtils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -79,8 +80,8 @@ export class WindowsSandboxManager implements SandboxManager {
     return isDangerousCommand(args);
   }
 
-  parseDenials(_result: ShellExecutionResult): ParsedSandboxDenial | undefined {
-    return undefined; // TODO: Implement Windows-specific denial parsing
+  parseDenials(result: ShellExecutionResult): ParsedSandboxDenial | undefined {
+    return parseWindowsSandboxDenials(result);
   }
 
   /**
