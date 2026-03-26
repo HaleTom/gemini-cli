@@ -49,6 +49,7 @@ import {
   getDisplayString,
   processSingleFileContent,
   type AgentLoopContext,
+  SHELL_TOOL_NAME,
 } from '@google/gemini-cli-core';
 import * as acp from '@agentclientprotocol/sdk';
 import { AcpFileSystemService } from './fileSystemService.js';
@@ -1053,8 +1054,34 @@ export class Session {
             throw new Error(`Unexpected: ${resultOutcome}`);
           }
         }
+
+        if (tool.name === SHELL_TOOL_NAME) {
+          await this.sendUpdate({
+            sessionUpdate: 'tool_call_update',
+            toolCallId: callId,
+            status: 'in_progress',
+            title: displayTitle,
+            content: [],
+            _meta: {
+              terminal_info: {
+                cwd: this.context.config.getTargetDir(),
+                terminal_id: callId,
+              },
+            },
+          });
+        }
       } else {
         const content: acp.ToolCallContent[] = [];
+        let meta = undefined;
+
+        if (tool.name === SHELL_TOOL_NAME) {
+          meta = {
+            terminal_info: {
+              cwd: this.context.config.getTargetDir(),
+              terminal_id: callId,
+            },
+          };
+        }
 
         await this.sendUpdate({
           sessionUpdate: 'tool_call',
@@ -1064,22 +1091,81 @@ export class Session {
           content,
           locations: invocation.toolLocations(),
           kind: toAcpToolKind(tool.kind),
+          _meta: meta ?? undefined,
         });
       }
 
-      const toolResult: ToolResult = await invocation.execute(abortSignal);
+      const updateOutput = async (output: unknown) => {
+        if (tool.name === SHELL_TOOL_NAME) {
+          let data = '';
+          if (typeof output === 'string') {
+            data = output;
+          } else if (
+            output &&
+            typeof output === 'object' &&
+            'lines' in output
+          ) {
+            const obj = output as { lines?: unknown };
+            if (Array.isArray(obj.lines)) {
+              data = (obj.lines as unknown[]).map(String).join('\n');
+            }
+          }
+          await this.sendUpdate({
+            sessionUpdate: 'tool_call_update',
+            toolCallId: callId,
+            status: 'in_progress',
+            // title: displayTitle,
+            content: [],
+            _meta: {
+              terminal_output: {
+                data,
+                terminal_id: callId,
+              },
+            },
+          });
+        }
+      };
+
+      const toolResult: ToolResult = await invocation.execute(
+        abortSignal,
+        updateOutput,
+      );
       const content = toToolCallContent(toolResult);
 
       const updateContent: acp.ToolCallContent[] = content ? [content] : [];
 
+      const isShellTool = tool.name === SHELL_TOOL_NAME;
+      const isShellError = !!(isShellTool && toolResult.data?.['isError']);
+
+      if (isShellTool) {
+        const rawExitCode = toolResult.data?.['exitCode'];
+        const exitCode: number | undefined =
+          typeof rawExitCode === 'number' ? rawExitCode : undefined;
+
+        const rawSignal = toolResult.data?.['signal'];
+        const signal: string | null =
+          typeof rawSignal === 'string' ? rawSignal : null;
+
+        meta = {
+          terminal_exit: {
+            exit_code:
+              typeof exitCode === 'number' ? exitCode : isShellError ? 1 : 0,
+            signal,
+            terminal_id: callId,
+          },
+        };
+      }
+
       await this.sendUpdate({
         sessionUpdate: 'tool_call_update',
         toolCallId: callId,
-        status: 'completed',
+        status: toolResult.error || isShellError ? 'failed' : 'completed',
         title: displayTitle,
         content: updateContent,
         locations: invocation.toolLocations(),
         kind: toAcpToolKind(tool.kind),
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        _meta: meta ?? undefined,
       });
 
       const durationMs = Date.now() - startTime;
