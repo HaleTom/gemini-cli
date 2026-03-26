@@ -30,23 +30,10 @@ import {
   isDangerousCommand,
   isStrictlyApproved,
 } from './commandSafety.js';
-import { type SandboxPolicyManager } from '../../policy/sandboxPolicyManager.js';
 import { verifySandboxOverrides } from '../utils/commandUtils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-export interface WindowsSandboxOptions extends GlobalSandboxOptions {
-  /** The current sandbox mode behavior from config. */
-  modeConfig?: {
-    readonly?: boolean;
-    network?: boolean;
-    approvedTools?: string[];
-    allowOverrides?: boolean;
-  };
-  /** The policy manager for persistent approvals. */
-  policyManager?: SandboxPolicyManager;
-}
 
 /**
  * A SandboxManager implementation for Windows that uses Restricted Tokens,
@@ -59,7 +46,7 @@ export class WindowsSandboxManager implements SandboxManager {
   private readonly allowedCache = new Set<string>();
   private readonly deniedCache = new Set<string>();
 
-  constructor(private readonly options: WindowsSandboxOptions) {
+  constructor(private readonly options: GlobalSandboxOptions) {
     this.helperPath = path.resolve(__dirname, 'GeminiSandbox.exe');
   }
 
@@ -270,7 +257,7 @@ export class WindowsSandboxManager implements SandboxManager {
     }
 
     // Denies access to forbiddenPaths for Low Integrity processes.
-    const forbiddenPaths = sanitizePaths(req.policy?.forbiddenPaths) || [];
+    const forbiddenPaths = sanitizePaths(this.options.forbiddenPaths) || [];
     for (const forbiddenPath of forbiddenPaths) {
       await this.denyLowIntegrityAccess(forbiddenPath);
     }

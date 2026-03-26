@@ -25,26 +25,13 @@ import {
   isDangerousCommand,
   isStrictlyApproved,
 } from '../utils/commandSafety.js';
-import { type SandboxPolicyManager } from '../../policy/sandboxPolicyManager.js';
 import { verifySandboxOverrides } from '../utils/commandUtils.js';
-
-export interface MacOsSandboxOptions extends GlobalSandboxOptions {
-  /** The current sandbox mode behavior from config. */
-  modeConfig?: {
-    readonly?: boolean;
-    network?: boolean;
-    approvedTools?: string[];
-    allowOverrides?: boolean;
-  };
-  /** The policy manager for persistent approvals. */
-  policyManager?: SandboxPolicyManager;
-}
 
 /**
  * A SandboxManager implementation for macOS that uses Seatbelt.
  */
 export class MacOsSandboxManager implements SandboxManager {
-  constructor(private readonly options: MacOsSandboxOptions) {}
+  constructor(private readonly options: GlobalSandboxOptions) {}
 
   isKnownSafeCommand(args: string[]): boolean {
     const toolName = args[0];
@@ -111,10 +98,12 @@ export class MacOsSandboxManager implements SandboxManager {
         false,
     };
 
+    const forbiddenPaths = this.options.forbiddenPaths;
+
     const sandboxArgs = buildSeatbeltArgs({
       workspace: this.options.workspace,
       allowedPaths: [...(req.policy?.allowedPaths || [])],
-      forbiddenPaths: req.policy?.forbiddenPaths,
+      forbiddenPaths,
       networkAccess: mergedAdditional.network,
       workspaceWrite,
       additionalPermissions: mergedAdditional,

@@ -21,7 +21,6 @@ import {
   sanitizeEnvironment,
   getSecureSanitizationConfig,
 } from '../../services/environmentSanitization.js';
-import { type SandboxPolicyManager } from '../../policy/sandboxPolicyManager.js';
 import {
   isStrictlyApproved,
   verifySandboxOverrides,
@@ -119,18 +118,8 @@ import {
  * A SandboxManager implementation for Linux that uses Bubblewrap (bwrap).
  */
 
-export interface LinuxSandboxOptions extends GlobalSandboxOptions {
-  modeConfig?: {
-    readonly?: boolean;
-    network?: boolean;
-    approvedTools?: string[];
-    allowOverrides?: boolean;
-  };
-  policyManager?: SandboxPolicyManager;
-}
-
 export class LinuxSandboxManager implements SandboxManager {
-  constructor(private readonly options: LinuxSandboxOptions) {}
+  constructor(private readonly options: GlobalSandboxOptions) {}
 
   isKnownSafeCommand(args: string[]): boolean {
     return isKnownSafeCommand(args);
@@ -287,7 +276,7 @@ export class LinuxSandboxManager implements SandboxManager {
       }
     }
 
-    const forbiddenPaths = sanitizePaths(req.policy?.forbiddenPaths) || [];
+    const forbiddenPaths = sanitizePaths(this.options.forbiddenPaths) || [];
     for (const p of forbiddenPaths) {
       let resolved: string;
       try {
