@@ -842,7 +842,7 @@ export class Session {
         }
 
         if (
-          (error instanceof Error && error.name === 'InvalidStreamError') ||
+          error instanceof InvalidStreamError ||
           (error &&
             typeof error === 'object' &&
             'type' in error &&
