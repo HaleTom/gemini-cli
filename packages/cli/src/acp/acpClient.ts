@@ -841,6 +841,37 @@ export class Session {
           return { stopReason: CoreToolCallStatus.Cancelled };
         }
 
+        if (
+          (error instanceof Error && error.name === 'InvalidStreamError') ||
+          (error &&
+            typeof error === 'object' &&
+            'type' in error &&
+            error.type === 'NO_RESPONSE_TEXT')
+        ) {
+          // The stream ended with an empty response or malformed tool call.
+          // Treat this as a graceful end to the model's turn rather than a crash.
+          return {
+            stopReason: 'end_turn',
+            _meta: {
+              quota: {
+                token_count: {
+                  input_tokens: totalInputTokens,
+                  output_tokens: totalOutputTokens,
+                },
+                model_usage: Array.from(modelUsageMap.entries()).map(
+                  ([modelName, counts]) => ({
+                    model: modelName,
+                    token_count: {
+                      input_tokens: counts.input,
+                      output_tokens: counts.output,
+                    },
+                  }),
+                ),
+              },
+            },
+          };
+        }
+
         throw new acp.RequestError(
           getErrorStatus(error) || 500,
           getAcpErrorMessage(error),
