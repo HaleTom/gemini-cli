@@ -5,12 +5,14 @@
  */
 
 import { renderWithProviders } from '../../test-utils/render.js';
-import { BrailleAnimation } from './BrailleAnimation.js';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+vi.unmock('./CircularSpinner.js');
+import { CircularSpinner } from './CircularSpinner.js';
 import { act } from 'react';
 import { createMockSettings } from '../../test-utils/settings.js';
 
-describe('BrailleAnimation', () => {
+describe('CircularSpinner', () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -30,7 +32,7 @@ describe('BrailleAnimation', () => {
 
     // renderWithProviders will call waitUntilReady once.
     const renderResult = await renderWithProviders(
-      <BrailleAnimation interval={100} variant="Long" animate={true} />,
+      <CircularSpinner interval={100} variant="Long" animate={true} />,
       { settings },
     );
 
@@ -90,7 +92,7 @@ describe('BrailleAnimation', () => {
 
   it('should support "Composite" variant with dynamic lengths', async () => {
     const renderResult = await renderWithProviders(
-      <BrailleAnimation interval={100} variant="Composite" animate={true} />,
+      <CircularSpinner interval={100} variant="Composite" animate={true} />,
     );
 
     // Just verify it renders something

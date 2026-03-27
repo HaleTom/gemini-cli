@@ -6,7 +6,7 @@
 
 import { Box, Text } from 'ink';
 import type { CompressionProps } from '../../types.js';
-import { BrailleAnimation } from '../BrailleAnimation.js';
+import { CircularSpinner } from '../CircularSpinner.js';
 import { theme } from '../../semantic-colors.js';
 import { SCREEN_READER_MODEL_PREFIX } from '../../textConstants.js';
 import { CompressionStatus } from '@google/gemini-cli-core';
@@ -61,7 +61,7 @@ export function CompressionMessage({
     <Box flexDirection="row">
       <Box marginRight={1}>
         {isPending ? (
-          <BrailleAnimation />
+          <CircularSpinner />
         ) : (
           <Text color={theme.text.accent}>✦</Text>
         )}

@@ -11,9 +11,9 @@ import { Text } from 'ink';
 import { act } from 'react';
 
 // Mock components to simplify testing
-vi.mock('./BrailleAnimation.js', () => ({
-  BrailleAnimation: ({ variant }: { variant: string }) => (
-    <Text>BrailleAnimation-{variant}</Text>
+vi.mock('./CircularSpinner.js', () => ({
+  CircularSpinner: ({ variant }: { variant: string }) => (
+    <Text>CircularSpinner-{variant}</Text>
   ),
   GEMINI_SPINNER: { interval: 80, frames: [] },
 }));
@@ -23,12 +23,12 @@ vi.mock('./CliSpinner.js', () => ({
 }));
 
 describe('GeminiSpinner', () => {
-  it('renders BrailleAnimation with "Composite" variant by default', async () => {
+  it('renders CircularSpinner with "Composite" variant by default', async () => {
     const { lastFrame, waitUntilReady, unmount } = await renderWithProviders(
       <GeminiSpinner />,
     );
     await waitUntilReady();
-    expect(lastFrame()).toContain('BrailleAnimation-Composite');
+    expect(lastFrame()).toContain('CircularSpinner-Composite');
     act(() => {
       unmount();
     });

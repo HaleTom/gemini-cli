@@ -25,8 +25,8 @@ vi.mock('../hooks/useKeypress.js', () => ({
 
 const mockedUseKeypress = useKeypress as Mock;
 
-vi.mock('../components/BrailleAnimation.js', () => ({
-  BrailleAnimation: () => <Text>[Spinner]</Text>,
+vi.mock('../components/CircularSpinner.js', () => ({
+  CircularSpinner: () => <Text>[Spinner]</Text>,
 }));
 
 describe('AuthInProgress', () => {

@@ -11,7 +11,7 @@ import { theme } from '../semantic-colors.js';
 import { useStreamingContext } from '../contexts/StreamingContext.js';
 import { StreamingState } from '../types.js';
 import { GeminiRespondingSpinner } from './GeminiRespondingSpinner.js';
-import { BrailleAnimation } from './BrailleAnimation.js';
+import { CircularSpinner } from './CircularSpinner.js';
 import { formatDuration } from '../utils/formatters.js';
 import { useTerminalSize } from '../hooks/useTerminalSize.js';
 import { isNarrowWidth } from '../utils/isNarrowWidth.js';
@@ -99,7 +99,7 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
               spinnerIcon ??
               (streamingState === StreamingState.WaitingForConfirmation ? (
                 <Text color={theme.text.primary}>
-                  <BrailleAnimation variant="Static" />
+                  <CircularSpinner variant="Static" />
                 </Text>
               ) : (
                 ''
@@ -147,7 +147,7 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
                 spinnerIcon ??
                 (streamingState === StreamingState.WaitingForConfirmation ? (
                   <Text color={theme.text.primary}>
-                    <BrailleAnimation variant="Static" />
+                    <CircularSpinner variant="Static" />
                   </Text>
                 ) : (
                   ''

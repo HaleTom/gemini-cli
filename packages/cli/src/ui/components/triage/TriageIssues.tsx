@@ -17,7 +17,7 @@ import { Command } from '../../key/keyMatchers.js';
 import { TextInput } from '../shared/TextInput.js';
 import { useTextBuffer } from '../shared/text-buffer.js';
 import { useKeyMatchers } from '../../hooks/useKeyMatchers.js';
-import { BrailleAnimation } from '../BrailleAnimation.js';
+import { CircularSpinner } from '../CircularSpinner.js';
 
 interface Issue {
   number: number;
@@ -448,7 +448,7 @@ Return a JSON object with:
   if (state.status === 'loading') {
     return (
       <Box>
-        <BrailleAnimation />
+        <CircularSpinner />
         <Text> {state.message}</Text>
       </Box>
     );
@@ -521,7 +521,7 @@ Return a JSON object with:
     if (state.status === 'analyzing') {
       return (
         <Box>
-          <BrailleAnimation />
+          <CircularSpinner />
           <Text> {state.message}</Text>
         </Box>
       );
@@ -610,7 +610,7 @@ Return a JSON object with:
       >
         {state.status === 'analyzing' ? (
           <Box>
-            <BrailleAnimation />
+            <CircularSpinner />
             <Text> Analyzing issue with Gemini...</Text>
           </Box>
         ) : analysis ? (

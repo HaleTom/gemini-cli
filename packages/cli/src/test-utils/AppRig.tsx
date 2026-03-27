@@ -163,6 +163,15 @@ vi.mock('../ui/components/GeminiSpinner.js', async () => {
   };
 });
 
+vi.mock('../ui/components/CircularSpinner.js', async () => {
+  const React = await import('react');
+  const { Text } = await import('ink');
+  return {
+    CircularSpinner: ({ variant }: { variant?: string }) =>
+      React.createElement(Text, null, variant === 'Static' ? '⢎⡱' : '⠋'),
+  };
+});
+
 // Mock GeminiRespondingSpinner to disable animations (avoiding 'act()' warnings) without triggering screen reader mode.
 vi.mock('../ui/components/GeminiRespondingSpinner.js', async () => {
   const React = await import('react');

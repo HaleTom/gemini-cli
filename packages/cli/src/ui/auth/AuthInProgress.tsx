@@ -7,7 +7,7 @@
 import type React from 'react';
 import { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
-import { BrailleAnimation } from '../components/BrailleAnimation.js';
+import { CircularSpinner } from '../components/CircularSpinner.js';
 import { theme } from '../semantic-colors.js';
 import { useKeypress } from '../hooks/useKeypress.js';
 
@@ -53,7 +53,7 @@ export function AuthInProgress({
       ) : (
         <Box>
           <Text>
-            <BrailleAnimation /> Waiting for authentication... (Press Esc or
+            <CircularSpinner /> Waiting for authentication... (Press Esc or
             Ctrl+C to cancel)
           </Text>
         </Box>

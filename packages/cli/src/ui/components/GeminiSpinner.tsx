@@ -11,7 +11,7 @@ import { CliSpinner } from './CliSpinner.js';
 import type { SpinnerName } from 'cli-spinners';
 import { Colors } from '../colors.js';
 import tinygradient from 'tinygradient';
-import { BrailleAnimation } from './BrailleAnimation.js';
+import { CircularSpinner } from './CircularSpinner.js';
 import { useSettings } from '../contexts/SettingsContext.js';
 
 const COLOR_CYCLE_DURATION_MS = 4000;
@@ -59,7 +59,7 @@ export const GeminiSpinner: React.FC<GeminiSpinnerProps> = ({
 
   const renderSpinner = () => {
     if (spinnerType === 'dynamic') {
-      return <BrailleAnimation variant="Composite" />;
+      return <CircularSpinner variant="Composite" />;
     }
 
     return <CliSpinner type={spinnerType} />;

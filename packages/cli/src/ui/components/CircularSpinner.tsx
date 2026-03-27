@@ -25,15 +25,15 @@ const DOTS = [
 
 const COMPOSITE_SEQUENCE = [2, 3, 4, 5, 4, 3];
 
-export type BrailleVariant =
+export type CircularSpinnerVariant =
   | 'Static'
   | 'Small'
   | 'Medium'
   | 'Long'
   | 'Composite';
 
-interface BrailleAnimationProps {
-  variant?: BrailleVariant;
+interface CircularSpinnerProps {
+  variant?: CircularSpinnerVariant;
   interval?: number;
   animate?: boolean;
 }
@@ -48,12 +48,11 @@ interface BrailleAnimationProps {
  * - 'Long': Phased growth (len 1, 3, 5) changing every 8 ticks
  * - 'Composite': Dynamic length [2, 3, 4, 5, 4, 3] changing every 8 ticks
  */
-export const BrailleAnimation: React.FC<BrailleAnimationProps> = ({
+export const CircularSpinner: React.FC<CircularSpinnerProps> = ({
   variant = 'Composite',
   interval = 80,
   animate = !process.env['VITEST'],
 }) => {
-  console.error(`DEBUG: BrailleAnimation animate=${animate} VITEST=${process.env['VITEST']} NODE_ENV=${process.env['NODE_ENV']}`); // eslint-disable-line no-console
   const [tick, setTick] = useState(0);
   const settings = useSettings();
   const shouldShow = settings.merged.ui?.showSpinner !== false;

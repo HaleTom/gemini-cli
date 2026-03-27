@@ -8,6 +8,17 @@ import { vi, beforeEach, afterEach } from 'vitest';
 import { format } from 'node:util';
 import { coreEvents } from '@google/gemini-cli-core';
 import { themeManager } from './src/ui/themes/theme-manager.js';
+import { cleanup } from './src/test-utils/render.js';
+
+// Global mock for CircularSpinner to prevent act() warnings from intervals
+vi.mock('./src/ui/components/CircularSpinner.js', async () => {
+  const React = await import('react');
+  const { Text } = await import('ink');
+  return {
+    CircularSpinner: ({ variant }: { variant?: string }) =>
+      React.createElement(Text, null, variant === 'Static' ? '⢎⡱' : '⠋'),
+  };
+});
 
 // Unset CI environment variable so that ink renders dynamically as it does in a real terminal
 if (process.env.CI !== undefined) {
@@ -79,6 +90,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  cleanup();
   consoleErrorSpy.mockRestore();
 
   vi.unstubAllEnvs();
