@@ -305,8 +305,11 @@ export class Scheduler {
 
     // Sort requests to ensure Topic changes happen before actions in the same batch.
     const sortedRequests = [...requests].sort((a, b) => {
-      if (a.name === UPDATE_TOPIC_TOOL_NAME) return -1;
-      if (b.name === UPDATE_TOPIC_TOOL_NAME) return 1;
+      const aIsUpdate = a.name === UPDATE_TOPIC_TOOL_NAME;
+      const bIsUpdate = b.name === UPDATE_TOPIC_TOOL_NAME;
+      if (aIsUpdate && bIsUpdate) return 0;
+      if (aIsUpdate) return -1;
+      if (bIsUpdate) return 1;
       return 0;
     });
 

@@ -54,6 +54,14 @@ export default function App() {
     }, 5000);
   };
 
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // --- Theme Logic ---
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
     const saved = localStorage.getItem('devtools-theme');
@@ -325,16 +333,24 @@ export default function App() {
                 <button
                   onClick={async () => {
                     try {
-                      await fetch('/api/trigger-debugger', {
+                      const response = await fetch('/api/trigger-debugger', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ sessionId: selectedSessionId }),
                       });
-                      showToast(
-                        'Node debugger attached. Open chrome://inspect in Chrome to start debugging.',
-                      );
+                      if (response.ok) {
+                        showToast(
+                          'Node debugger attached. Open chrome://inspect in Chrome to start debugging.',
+                        );
+                      } else {
+                        const data = await response.json().catch(() => ({}));
+                        showToast(
+                          `Failed to attach debugger: ${data.error || response.statusText}`,
+                        );
+                      }
                     } catch (e) {
                       console.error('Failed to trigger debugger:', e);
+                      showToast('Failed to attach debugger.');
                     }
                   }}
                   style={{
