@@ -24,17 +24,24 @@ export function createSandboxManager(
   options: GlobalSandboxOptions,
   approvalMode?: string,
 ): SandboxManager {
-  if (!options.modeConfig && options.policyManager && approvalMode) {
-    options.modeConfig = options.policyManager.getModeConfig(approvalMode);
+  if (approvalMode === 'yolo') {
+    return new NoopSandboxManager();
   }
 
+  const modeConfig =
+    options.modeConfig ??
+    (options.policyManager && approvalMode
+      ? options.policyManager.getModeConfig(approvalMode)
+      : undefined);
+
   if (sandbox?.enabled) {
+    const sandboxOptions = { ...options, modeConfig };
     if (os.platform() === 'win32') {
-      return new WindowsSandboxManager(options);
+      return new WindowsSandboxManager(sandboxOptions);
     } else if (os.platform() === 'linux') {
-      return new LinuxSandboxManager(options);
+      return new LinuxSandboxManager(sandboxOptions);
     } else if (os.platform() === 'darwin') {
-      return new MacOsSandboxManager(options);
+      return new MacOsSandboxManager(sandboxOptions);
     }
     return new LocalSandboxManager(options);
   }

@@ -83,9 +83,6 @@ public class GeminiSandbox {
     static extern bool OpenProcessToken(IntPtr ProcessHandle, uint DesiredAccess, out IntPtr TokenHandle);
 
     [DllImport("advapi32.dll", SetLastError = true)]
-    static extern bool DuplicateTokenEx(IntPtr hExistingToken, uint dwDesiredAccess, IntPtr lpTokenAttributes, uint ImpersonationLevel, uint TokenType, out IntPtr phNewToken);
-
-    [DllImport("advapi32.dll", SetLastError = true)]
     static extern bool CreateRestrictedToken(IntPtr ExistingTokenHandle, uint Flags, uint DisableSidCount, IntPtr SidsToDisable, uint DeletePrivilegeCount, IntPtr PrivilegesToDelete, uint RestrictedSidCount, IntPtr SidsToRestrict, out IntPtr NewTokenHandle);
 
     [DllImport("advapi32.dll", CharSet = CharSet.Auto, SetLastError = true)]
@@ -200,7 +197,7 @@ public class GeminiSandbox {
         PROCESS_INFORMATION pi = new PROCESS_INFORMATION();
 
         try {
-            // 1. Duplicate Primary Token
+            // 1. Open Process Token and Create Restricted Token
             if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ALL_ACCESS, out hToken)) {
                 Console.Error.WriteLine("Error: OpenProcessToken failed (" + Marshal.GetLastWin32Error() + ")");
                 return 1;

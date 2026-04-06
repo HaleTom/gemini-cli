@@ -178,6 +178,16 @@ export class DevTools extends EventEmitter {
 
         // API routes
         if (req.url === '/api/trigger-debugger' && req.method === 'POST') {
+          // Reject cross-origin requests to prevent CSRF
+          const origin = req.headers['origin'];
+          if (origin) {
+            const allowed = `http://127.0.0.1:${this.port}`;
+            if (origin !== allowed && origin !== 'http://localhost') {
+              res.writeHead(403, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Forbidden' }));
+              return;
+            }
+          }
           let body = '';
           req.on('data', (chunk) => {
             body += chunk;

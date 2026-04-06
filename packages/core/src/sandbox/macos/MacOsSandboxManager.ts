@@ -102,7 +102,7 @@ export class MacOsSandboxManager implements SandboxManager {
     const workspaceWrite = !isReadonlyMode || isApproved || isYolo;
 
     const defaultNetwork =
-      this.options.modeConfig?.network || req.policy?.networkAccess || isYolo;
+      this.options.modeConfig?.network ?? req.policy?.networkAccess ?? isYolo;
 
     const { allowed: allowedPaths, forbidden: forbiddenPaths } =
       await resolveSandboxPaths(this.options, req);
