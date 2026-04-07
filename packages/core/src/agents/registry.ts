@@ -26,6 +26,8 @@ import {
   ModelConfigService,
 } from '../services/modelConfigService.js';
 import { PolicyDecision, PRIORITY_SUBAGENT_TOOL } from '../policy/types.js';
+import { buildFilePathWithBaseNameArgsPattern } from '../policy/utils.js';
+import { getCurrentGeminiMdFilename } from '../tools/memoryTool.js';
 import { A2AAgentError, AgentAuthConfigMissingError } from './a2a-errors.js';
 
 /**
@@ -46,6 +48,8 @@ export class AgentRegistry {
   private readonly agents = new Map<string, AgentDefinition<any>>();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private readonly allDefinitions = new Map<string, AgentDefinition<any>>();
+  private static readonly MEMORY_MANAGER_POLICY_SOURCE =
+    'AgentRegistry (Memory Manager Dynamic)';
 
   constructor(private readonly config: Config) {}
 
@@ -112,7 +116,7 @@ export class AgentRegistry {
       return;
     }
 
-    // Load user-level agents: ~/.gemini/agents/
+    // Load user-level agents from the user config dir.
     const userAgentsDir = Storage.getUserAgentsDir();
     const userAgents = await loadAgentsFromDirectory(userAgentsDir);
     for (const error of userAgents.errors) {
@@ -286,6 +290,53 @@ export class AgentRegistry {
     // keeping the main agent's workspace context clean.
     if (this.config.isMemoryManagerEnabled()) {
       this.registerLocalAgent(MemoryManagerAgent(this.config));
+
+      // Ensure the selected user config directory is writable so the
+      // save_memory agent can update the global GEMINI.md file there.
+      try {
+        const globalDir = Storage.getGlobalGeminiDir();
+        this.config.getWorkspaceContext().addDirectory(globalDir);
+        this.addMemoryManagerUserConfigPolicies(globalDir);
+      } catch (e) {
+        debugLogger.warn(
+          `[AgentRegistry] Could not add selected user config directory to workspace:`,
+          e,
+        );
+      }
+    }
+  }
+
+  private addMemoryManagerUserConfigPolicies(_userConfigDir: string): void {
+    const policyEngine = this.config.getPolicyEngine();
+    if (!policyEngine) {
+      return;
+    }
+    const source = AgentRegistry.MEMORY_MANAGER_POLICY_SOURCE;
+    const anyGeminiMdPathPattern = buildFilePathWithBaseNameArgsPattern(
+      getCurrentGeminiMdFilename(),
+    );
+
+    for (const toolName of ['read_file', 'write_file', 'replace']) {
+      policyEngine.removeRulesForTool(toolName, source);
+    }
+
+    for (const toolName of ['read_file', 'write_file', 'replace']) {
+      policyEngine.addRule({
+        toolName,
+        subagent: 'save_memory',
+        decision: PolicyDecision.ALLOW,
+        priority: 1.2,
+        argsPattern: new RegExp(anyGeminiMdPathPattern),
+        source,
+      });
+      policyEngine.addRule({
+        toolName,
+        subagent: 'save_memory',
+        decision: PolicyDecision.DENY,
+        priority: 1.1,
+        denyMessage: 'Memory Manager may only access GEMINI.md files.',
+        source,
+      });
     }
   }
 

@@ -26,10 +26,10 @@ describe('Memory Manager Policy', () => {
     });
   });
 
-  it('should allow save_memory to read ~/.gemini/GEMINI.md', async () => {
+  it('should allow save_memory to read the user config GEMINI.md', async () => {
     const toolCall = {
       name: 'read_file',
-      args: { file_path: '~/.gemini/GEMINI.md' },
+      args: { file_path: '~/.config/gemini-cli/GEMINI.md' },
     };
     const result = await engine.check(
       toolCall,
@@ -40,10 +40,10 @@ describe('Memory Manager Policy', () => {
     expect(result.decision).toBe(PolicyDecision.ALLOW);
   });
 
-  it('should allow save_memory to write ~/.gemini/GEMINI.md', async () => {
+  it('should allow save_memory to write the user config GEMINI.md', async () => {
     const toolCall = {
       name: 'write_file',
-      args: { file_path: '~/.gemini/GEMINI.md', content: 'test' },
+      args: { file_path: '~/.config/gemini-cli/GEMINI.md', content: 'test' },
     };
     const result = await engine.check(
       toolCall,
@@ -54,10 +54,14 @@ describe('Memory Manager Policy', () => {
     expect(result.decision).toBe(PolicyDecision.ALLOW);
   });
 
-  it('should allow save_memory to list ~/.gemini/', async () => {
+  it('should allow save_memory to replace the user config GEMINI.md', async () => {
     const toolCall = {
-      name: 'list_directory',
-      args: { dir_path: '~/.gemini/' },
+      name: 'replace',
+      args: {
+        file_path: '~/.config/gemini-cli/GEMINI.md',
+        old_string: 'old',
+        new_string: 'new',
+      },
     };
     const result = await engine.check(
       toolCall,
@@ -68,7 +72,24 @@ describe('Memory Manager Policy', () => {
     expect(result.decision).toBe(PolicyDecision.ALLOW);
   });
 
-  it('should fall through to global allow rule for save_memory reading non-.gemini files', async () => {
+  it('should deny save_memory reading non-GEMINI files in the user config dir', async () => {
+    const toolCall = {
+      name: 'read_file',
+      args: { file_path: '~/.config/gemini-cli/settings.json' },
+    };
+    const result = await engine.check(
+      toolCall,
+      undefined,
+      undefined,
+      'save_memory',
+    );
+    expect(result.decision).toBe(PolicyDecision.DENY);
+    expect(result.rule?.denyMessage).toContain(
+      'Memory Manager may only access GEMINI.md files.',
+    );
+  });
+
+  it('should deny save_memory reading non-GEMINI files outside the user config dir', async () => {
     const toolCall = {
       name: 'read_file',
       args: { file_path: '/etc/passwd' },
@@ -79,12 +100,13 @@ describe('Memory Manager Policy', () => {
       undefined,
       'save_memory',
     );
-    // The memory-manager policy only matches .gemini/ paths.
-    // Other paths fall through to the global read_file allow rule (priority 50).
-    expect(result.decision).toBe(PolicyDecision.ALLOW);
+    expect(result.decision).toBe(PolicyDecision.DENY);
+    expect(result.rule?.denyMessage).toContain(
+      'Memory Manager may only access GEMINI.md files.',
+    );
   });
 
-  it('should not match paths where .gemini is a substring (e.g. not.gemini)', async () => {
+  it('should deny save_memory when the path is not a GEMINI.md file', async () => {
     const toolCall = {
       name: 'read_file',
       args: { file_path: '/tmp/not.gemini/evil' },
@@ -95,16 +117,13 @@ describe('Memory Manager Policy', () => {
       undefined,
       'save_memory',
     );
-    // The tighter argsPattern requires .gemini/ to be preceded by start-of-string
-    // or a path separator, so "not.gemini/" should NOT match the memory-manager rule.
-    // It falls through to the global read_file allow rule instead.
-    expect(result.decision).toBe(PolicyDecision.ALLOW);
+    expect(result.decision).toBe(PolicyDecision.DENY);
   });
 
-  it('should fall through to global allow rule for other agents accessing ~/.gemini/', async () => {
+  it('should fall through to global allow rule for other agents accessing the user config folder', async () => {
     const toolCall = {
       name: 'read_file',
-      args: { file_path: '~/.gemini/GEMINI.md' },
+      args: { file_path: '~/.config/gemini-cli/GEMINI.md' },
     };
     const result = await engine.check(
       toolCall,

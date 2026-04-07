@@ -15,14 +15,7 @@ import {
 } from 'vitest';
 import { AcpFileSystemService } from './fileSystemService.js';
 import type { AgentSideConnection } from '@agentclientprotocol/sdk';
-import type { FileSystemService } from '@google/gemini-cli-core';
-import os from 'node:os';
-
-vi.mock('node:os', () => ({
-  default: {
-    homedir: vi.fn(),
-  },
-}));
+import { Storage, type FileSystemService } from '@google/gemini-cli-core';
 
 describe('AcpFileSystemService', () => {
   let mockConnection: Mocked<AgentSideConnection>;
@@ -40,7 +33,9 @@ describe('AcpFileSystemService', () => {
       readTextFile: vi.fn(),
       writeTextFile: vi.fn(),
     };
-    vi.mocked(os.homedir).mockReturnValue('/home/user');
+    vi.spyOn(Storage, 'getGlobalGeminiDir').mockReturnValue(
+      '/home/user/.config/gemini-cli',
+    );
   });
 
   afterEach(() => {
@@ -94,7 +89,7 @@ describe('AcpFileSystemService', () => {
       },
       {
         capability: true,
-        path: '/home/user/.gemini/tmp/file.md',
+        path: '/home/user/.config/gemini-cli/tmp/file.md',
         root: '/home/user',
         desc: 'fallback if file is inside global gemini dir, even if root overlaps',
         setup: () => {
@@ -102,7 +97,7 @@ describe('AcpFileSystemService', () => {
         },
         verify: () => {
           expect(mockFallback.readTextFile).toHaveBeenCalledWith(
-            '/home/user/.gemini/tmp/file.md',
+            '/home/user/.config/gemini-cli/tmp/file.md',
           );
           expect(mockConnection.readTextFile).not.toHaveBeenCalled();
         },
@@ -188,12 +183,12 @@ describe('AcpFileSystemService', () => {
       },
       {
         capability: true,
-        path: '/home/user/.gemini/tmp/file.md',
+        path: '/home/user/.config/gemini-cli/tmp/file.md',
         root: '/home/user',
         desc: 'fallback if file is inside global gemini dir, even if root overlaps',
         verify: () => {
           expect(mockFallback.writeTextFile).toHaveBeenCalledWith(
-            '/home/user/.gemini/tmp/file.md',
+            '/home/user/.config/gemini-cli/tmp/file.md',
             'content',
           );
           expect(mockConnection.writeTextFile).not.toHaveBeenCalled();

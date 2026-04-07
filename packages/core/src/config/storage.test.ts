@@ -24,7 +24,7 @@ vi.mock('fs', async (importOriginal) => {
 });
 
 import { Storage } from './storage.js';
-import { GEMINI_DIR, homedir, resolveToRealPath } from '../utils/paths.js';
+import { GEMINI_DIR, realHomedir, resolveToRealPath } from '../utils/paths.js';
 import { ProjectRegistry } from './projectRegistry.js';
 import { StorageMigration } from './storageMigration.js';
 
@@ -52,7 +52,7 @@ describe('Storage – initialize', () => {
   it('sets up the registry and performs migration if `getProjectTempDir` is called', async () => {
     await storage.initialize();
     expect(storage.getProjectTempDir()).toBe(
-      path.join(os.homedir(), GEMINI_DIR, 'tmp', PROJECT_SLUG),
+      path.join(MOCK_GLOBAL_CACHE_DIR, PROJECT_SLUG),
     );
 
     // Verify registry initialization
@@ -63,8 +63,9 @@ describe('Storage – initialize', () => {
     ).toHaveBeenCalledWith(projectRoot);
 
     // Verify migration calls
-    // We can't easily get the hash here without repeating logic, but we can verify it's called twice
-    expect(StorageMigration.migrateDirectory).toHaveBeenCalledTimes(2);
+    // We can't easily get the hash here without repeating logic, but we can verify it is called
+    // for legacy tmp root migration, temp slug migration, and history migration.
+    expect(StorageMigration.migrateDirectory).toHaveBeenCalledTimes(3);
 
     // Verify identifier is set by checking a path
     expect(storage.getProjectTempDir()).toContain(PROJECT_SLUG);
@@ -75,30 +76,31 @@ vi.mock('../utils/paths.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../utils/paths.js')>();
   return {
     ...actual,
-    homedir: vi.fn(actual.homedir),
+    realHomedir: vi.fn(actual.realHomedir),
+    getUserConfigDir: vi.fn(() => '/mock/home/.config/gemini-cli'),
+    getUserCacheDir: vi.fn(() => '/mock/home/.cache/gemini-cli'),
+    getUserTmpDir: vi.fn(() => '/mock/home/.cache/gemini-cli'),
   };
 });
 
+const MOCK_GLOBAL_GEMINI_DIR = '/mock/home/.config/gemini-cli';
+const MOCK_GLOBAL_CACHE_DIR = '/mock/home/.cache/gemini-cli';
+
 describe('Storage – getGlobalSettingsPath', () => {
-  it('returns path to ~/.gemini/settings.json', () => {
-    const expected = path.join(os.homedir(), GEMINI_DIR, 'settings.json');
+  it('returns path to ~/.config/gemini-cli/settings.json', () => {
+    const expected = path.join(MOCK_GLOBAL_GEMINI_DIR, 'settings.json');
     expect(Storage.getGlobalSettingsPath()).toBe(expected);
   });
 });
 
 describe('Storage - Security', () => {
   it('falls back to tmp for gemini but returns empty for agents if the home directory cannot be determined', () => {
-    vi.mocked(homedir).mockReturnValue('');
-
-    // .gemini falls back for backward compatibility
-    expect(Storage.getGlobalGeminiDir()).toBe(
-      path.join(os.tmpdir(), GEMINI_DIR),
-    );
+    vi.mocked(realHomedir).mockReturnValue('');
 
     // .agents returns empty to avoid insecure fallback WITHOUT throwing error
     expect(Storage.getGlobalAgentsDir()).toBe('');
 
-    vi.mocked(homedir).mockReturnValue(os.homedir());
+    vi.mocked(realHomedir).mockReturnValue(os.homedir());
   });
 });
 
@@ -117,8 +119,8 @@ describe('Storage – additional helpers', () => {
     expect(storage.getWorkspaceSettingsPath()).toBe(expected);
   });
 
-  it('getUserCommandsDir returns ~/.gemini/commands', () => {
-    const expected = path.join(os.homedir(), GEMINI_DIR, 'commands');
+  it('getUserCommandsDir returns ~/.config/gemini-cli/commands', () => {
+    const expected = path.join(MOCK_GLOBAL_GEMINI_DIR, 'commands');
     expect(Storage.getUserCommandsDir()).toBe(expected);
   });
 
@@ -127,8 +129,8 @@ describe('Storage – additional helpers', () => {
     expect(storage.getProjectCommandsDir()).toBe(expected);
   });
 
-  it('getUserSkillsDir returns ~/.gemini/skills', () => {
-    const expected = path.join(os.homedir(), GEMINI_DIR, 'skills');
+  it('getUserSkillsDir returns ~/.config/gemini-cli/skills', () => {
+    const expected = path.join(MOCK_GLOBAL_GEMINI_DIR, 'skills');
     expect(Storage.getUserSkillsDir()).toBe(expected);
   });
 
@@ -137,8 +139,8 @@ describe('Storage – additional helpers', () => {
     expect(storage.getProjectSkillsDir()).toBe(expected);
   });
 
-  it('getUserAgentsDir returns ~/.gemini/agents', () => {
-    const expected = path.join(os.homedir(), GEMINI_DIR, 'agents');
+  it('getUserAgentsDir returns ~/.config/gemini-cli/agents', () => {
+    const expected = path.join(MOCK_GLOBAL_GEMINI_DIR, 'agents');
     expect(Storage.getUserAgentsDir()).toBe(expected);
   });
 
@@ -147,40 +149,38 @@ describe('Storage – additional helpers', () => {
     expect(storage.getProjectAgentsDir()).toBe(expected);
   });
 
-  it('getProjectMemoryDir returns ~/.gemini/tmp/<identifier>/memory', async () => {
+  it('getProjectMemoryDir returns <tmpDir>/<identifier>/memory', async () => {
     await storage.initialize();
-    const expected = path.join(
-      os.homedir(),
-      GEMINI_DIR,
-      'tmp',
-      PROJECT_SLUG,
-      'memory',
-    );
+    const expected = path.join(MOCK_GLOBAL_CACHE_DIR, PROJECT_SLUG, 'memory');
     expect(storage.getProjectMemoryDir()).toBe(expected);
   });
 
-  it('getMcpOAuthTokensPath returns ~/.gemini/mcp-oauth-tokens.json', () => {
-    const expected = path.join(
-      os.homedir(),
-      GEMINI_DIR,
-      'mcp-oauth-tokens.json',
-    );
+  it('getMcpOAuthTokensPath returns ~/.config/gemini-cli/mcp-oauth-tokens.json', () => {
+    const expected = path.join(MOCK_GLOBAL_GEMINI_DIR, 'mcp-oauth-tokens.json');
     expect(Storage.getMcpOAuthTokensPath()).toBe(expected);
   });
 
-  it('getGlobalBinDir returns ~/.gemini/tmp/bin', () => {
-    const expected = path.join(os.homedir(), GEMINI_DIR, 'tmp', 'bin');
+  it('getGlobalBinDir returns ~/.cache/gemini-cli/bin', () => {
+    const expected = path.join(MOCK_GLOBAL_CACHE_DIR, 'bin');
     expect(Storage.getGlobalBinDir()).toBe(expected);
   });
 
-  it('getProjectTempPlansDir returns ~/.gemini/tmp/<identifier>/plans when no sessionId is provided', async () => {
+  it('getGlobalCacheDir returns ~/.cache/gemini-cli', () => {
+    expect(Storage.getGlobalCacheDir()).toBe(MOCK_GLOBAL_CACHE_DIR);
+  });
+
+  it('getGlobalTempDir returns ~/.cache/gemini-cli', () => {
+    expect(Storage.getGlobalTempDir()).toBe(MOCK_GLOBAL_CACHE_DIR);
+  });
+
+  it('getProjectTempPlansDir returns ~/.cache/gemini-cli/<identifier>/plans when no sessionId is provided', async () => {
     await storage.initialize();
     const tempDir = storage.getProjectTempDir();
     const expected = path.join(tempDir, 'plans');
     expect(storage.getProjectTempPlansDir()).toBe(expected);
   });
 
-  it('getProjectTempPlansDir returns ~/.gemini/tmp/<identifier>/<sessionId>/plans when sessionId is provided', async () => {
+  it('getProjectTempPlansDir returns ~/.cache/gemini-cli/<identifier>/<sessionId>/plans when sessionId is provided', async () => {
     const sessionId = 'test-session-id';
     const storageWithSession = new Storage(projectRoot, sessionId);
     ProjectRegistry.prototype.getShortId = vi
@@ -192,14 +192,14 @@ describe('Storage – additional helpers', () => {
     expect(storageWithSession.getProjectTempPlansDir()).toBe(expected);
   });
 
-  it('getProjectTempTrackerDir returns ~/.gemini/tmp/<identifier>/tracker when no sessionId is provided', async () => {
+  it('getProjectTempTrackerDir returns ~/.cache/gemini-cli/<identifier>/tracker when no sessionId is provided', async () => {
     await storage.initialize();
     const tempDir = storage.getProjectTempDir();
     const expected = path.join(tempDir, 'tracker');
     expect(storage.getProjectTempTrackerDir()).toBe(expected);
   });
 
-  it('getProjectTempTrackerDir returns ~/.gemini/tmp/<identifier>/<sessionId>/tracker when sessionId is provided', async () => {
+  it('getProjectTempTrackerDir returns ~/.cache/gemini-cli/<identifier>/<sessionId>/tracker when sessionId is provided', async () => {
     const sessionId = 'test-session-id';
     const storageWithSession = new Storage(projectRoot, sessionId);
     ProjectRegistry.prototype.getShortId = vi
