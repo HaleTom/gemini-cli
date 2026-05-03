@@ -23,7 +23,6 @@ import { createMockSandboxConfig } from '@google/gemini-cli-test-utils';
 import { DEFAULT_MAX_ATTEMPTS } from '../utils/retry.js';
 import { ExperimentFlags } from '../code_assist/experiments/flagNames.js';
 import { debugLogger } from '../utils/debugLogger.js';
-import { coreEvents } from '../utils/events.js';
 import { ApprovalMode } from '../policy/types.js';
 import {
   HookType,
@@ -202,8 +201,6 @@ const mockCoreEvents = vi.hoisted(() => ({
   emitModelChanged: vi.fn(),
   emitConsoleLog: vi.fn(),
   emitQuotaChanged: vi.fn(),
-  on: vi.fn(),
-  emit: vi.fn(),
 }));
 
 const mockSetGlobalProxy = vi.hoisted(() => vi.fn());
